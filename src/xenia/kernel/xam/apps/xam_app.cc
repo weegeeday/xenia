@@ -101,6 +101,18 @@ X_HRESULT XamApp::DispatchMessageSync(uint32_t message, uint32_t buffer_ptr,
       return X_E_SUCCESS;
     }
   }
+  // NUI (Kinect) messages issued by nuiapi.lib via XMsgSystemProcessCall with
+  // app_id == 0xFE.  The message IDs fall in the 0x0002B000–0x0002CFFF range
+  // for camera/skeleton/depth operations and 0x0002C000–0x0002CFFF for
+  // identity operations.  Return a "device not connected" style failure so that
+  // games which check the return value can degrade gracefully instead of
+  // hitting the generic XELOGE below on every frame.
+  if ((message & 0xFFFF0000) == 0x00020000 &&
+      (message & 0x0000F000) >= 0x0000B000) {
+    XELOGD("NUI XMsgSystemProcessCall: msg={:08X} (no device, returning fail)",
+           message);
+    return X_E_FAIL;
+  }
   XELOGE(
       "Unimplemented XAM message app={:08X}, msg={:08X}, arg1={:08X}, "
       "arg2={:08X}",
